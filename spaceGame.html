@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://code.createjs.com/createjs-2015.05.21.min.js"></script>
+    <script src="https://code.createjs.com/tweenjs-0.6.1.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/1.17.0/TweenMax.min.js"></script>
+    <script>   
+      var keepAspectRatio = true;
+    var bimpList;
+    var bitmap;
+    var stage;
+    var canvas;
+    var txt;
+    var livesTxt;
+    var play;
+    var score = 0;
+    var mouseTarget;
+    var clicked;
+    var level;
+    var lives = 3;
+    var backgrounds = [];
+
+
+    function randBackground()
+    {
+      var rand = Math.random();
+      //rand = 0.9999;
+      rand *= 27;
+      //rand = 4.9995
+      rand = Math.floor(rand);
+      return rand;
+    }
+    function addBackground()
+    {
+      var background = new createjs.Bitmap("img/bg/" + randBackground() + ".jpg");
+          background.height = stage.canvas.height;
+          background.x = stage.canvas.width * i;
+          backgrounds.push(background);
+          stage.addChildAt(background,0);
+    }
+      function init() {
+
+        stage = new createjs.Stage("demoCanvas");
+        for(i = 0; i<3; i++)
+        {
+          addBackground();
+        }
+        function onResize()
+        {
+        // browser viewport size
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+
+        // stage dimensions
+        var ow = 1920; // your stage width
+        var oh = 1080; // your stage height
+        
+        if (keepAspectRatio)
+        {
+            // keep aspect ratio
+            var scale = Math.min(w / ow, h / oh);
+            stage.scaleX = scale;
+            stage.scaleY = scale;
+
+           // adjust canvas size
+           stage.canvas.width = ow * scale;
+          stage.canvas.height = oh * scale;
+        }
+        else
+        {
+            // scale to exact fit
+            stage.scaleX = w / ow;
+            stage.scaleY = h / oh;
+
+            // adjust canvas size
+            stage.canvas.width = ow * stage.scaleX;
+            stage.canvas.height = oh * stage.scaleY;
+           }
+
+         // update the stage
+        stage.update()
+        }
+        window.onresize = function()
+        {
+             onResize();
+        }
+        onResize();
+
+         var image = new Image();
+        image.src = "img/ship.png";
+        image.onload = createShips;
+       
+      }
+      function createShips(e)
+      {
+      	var image = e.target;
+      	var container = new createjs.Container();
+      	stage.addChild(container);
+        var l = 5;
+        bimpList = [];
+        for(var i=0; i<l; i++)
+        {
+            bitmap = new createjs.Bitmap(image);
+            container.addChild(bitmap);
+            bitmap.name = "ship"+i;
+            resetEnemy(bitmap);
+            bitmap.regX = bitmap.image.width/2|0;
+            bitmap.regY = bitmap.image.height/2|0;
+            bitmap.mouseEnabled = true;
+            bitmap.on("mousedown",function(){
+              resetEnemy(this);
+              score+=50;
+              txt.text = "Score: " + score;
+            });
+            bimpList.push(bitmap);
+        }
+        txt = new createjs.Text ("Score: 0","24px Arial","#000");
+        txt.textBaseline = "top";
+        txt.x = 1760;
+        txt.y = 20;
+        livesTxt = new createjs.Text("Lives: " + lives,"24px Arial","#000");
+        livesTxt.x = 1760;
+        livesTxt.y = 44;
+        stage.addChild(txt,livesTxt);
+        play = true;
+        createjs.Ticker.addEventListener("tick",handleTick);
+      }
+      function resetEnemy(ship)
+      {
+        ship.x = stage.canvas.width + Math.random()*750;
+        ship.y = stage.canvas.height * Math.random()|0;
+        ship.speed = (Math.random()*6)+2;
+      }
+      function handleTick(e)
+      {
+      
+        if(play == true)
+        {
+          for(j = 0; j < backgrounds.length; j++)
+          {
+            var bg = backgrounds[j];
+            // console.log(bg);
+            if(bg.x <= -1920)
+            {
+              backgrounds.splice(backgrounds[j],1);
+              addBackground()
+            } 
+            else 
+            {
+              bg.x -= 5;
+            }
+          }
+          var l = bimpList.length;
+          for(i = 0; i<l; i++)
+          {
+            var bmp = bimpList[i];
+            if(bmp.x > -428)
+            {
+              bmp.x -= bmp.speed;
+            }
+            else
+            {
+              //game over
+              //console.log("game over");
+              lives--;
+             livesTxt.text = "Lives: " + lives;
+             if(lives <= 0)
+             {
+              gameOver();
+             }
+             else
+             {
+              resetEnemy(bmp);
+            }
+              // gameOver();
+            }
+          }
+        }
+          txt.text = "Score: " + score;
+          stage.update();
+      }
+      function gameOver()
+      {
+        gameTxt = new createjs.Text("Game Over\n\n\n","36px Arial", "#000");
+        gameTxt.text += "Click to play again";
+        gameTxt.textAlign = "center";
+        gameTxt.x = stage.canvas.width /2;
+        gameTxt.y = stage.canvas.height /3;
+        stage.addChild(gameTxt);
+        play = false;
+        var l = bimpList.length;
+        for(var i=0; i<l; i++)
+        {
+          var bmp = bimpList[i];
+          resetEnemy(bmp);
+        }
+        stage.update();
+        stage.canvas.onclick = handleClick;
+      }
+      function handleClick(e)
+      {
+        stage.canvas.onclick = null;
+        stage.removeChild(gameTxt);
+        score = 0;
+        play = true;
+      }
+      function onMouseDown(e)
+      { 
+        if(!e){var e = window.event;}
+        clicked = true;
+      }
+      function onMouseUp(e)
+      {
+        clicked = false;
+      }
+    </script>
+  </head>
+  <body onload="init();" style="padding:0; border:0; margin:0">
+    <canvas id="demoCanvas" width="1920" height="1080" style=" padding:0; border:0; margin:0"></canvas>
+  </body>
+</html>
